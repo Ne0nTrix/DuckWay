@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5faff">
+  <title>DuckWay — find a toilet, anywhere</title>
+  <meta name="description" content="DuckWay helps you find open, clean and verified toilets around you in seconds.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2C12 2 6 8 6 15.5 6 25 20 38 20 38s14-13 14-22.5C34 8 28 2 20 2z' fill='%234d9bff'/%3E%3Cellipse cx='18.5' cy='20.5' rx='8' ry='5' fill='%23ffd84a'/%3E%3Ccircle cx='22.5' cy='12.5' r='4.6' fill='%23ffd84a'/%3E%3Cpath d='M26 11.4l4.6 1.3-4.6 1.9z' fill='%23ff9f43'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- soft, slowly drifting colours and bubbles behind everything -->
+<div class="decor" aria-hidden="true">
+  <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+  <span class="bubble"></span><span class="bubble"></span><span class="bubble"></span><span class="bubble"></span>
+  <span class="bubble"></span><span class="bubble"></span><span class="bubble"></span><span class="bubble"></span>
+</div>
+
+<!-- opening splash -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-in">
+    <div class="splash-duck" id="splash-duck"></div>
+    <svg class="splash-waves" viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M0 20c25-16 50-16 75 0s50 16 75 0 50-16 75 0 50 16 75 0 50-16 100 0v20H0z"/></svg>
+    <h1>Duck<b>Way</b></h1>
+    <p>Finding the comfiest loo near you…</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <button class="brand" data-action="nav" data-view="explore" aria-label="DuckWay home">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fc3ff"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+      <path d="M20 2C12 2 6 8 6 15.5 6 25 20 38 20 38s14-13 14-22.5C34 8 28 2 20 2z" fill="url(#lg)"/>
+      <ellipse cx="18.5" cy="20.5" rx="8" ry="5" fill="#ffd84a"/>
+      <circle cx="22.5" cy="12.5" r="4.6" fill="#ffd84a"/>
+      <path d="M26 11.4l4.6 1.3-4.6 1.9z" fill="#ff9f43"/>
+      <circle cx="23.6" cy="11.6" r=".9" fill="#23305a"/>
+    </svg>
+    <span>Duck<b>Way</b></span>
+  </button>
+
+  <nav class="mainnav" aria-label="Main">
+    <button data-action="nav" data-view="explore" class="is-active"><i data-lucide="map"></i><span>Explore</span></button>
+    <button data-action="nav" data-view="host"><i data-lucide="hand-coins"></i><span>Host</span></button>
+    <button data-action="nav" data-view="community"><i data-lucide="trophy"></i><span>Community</span></button>
+  </nav>
+
+  <button class="points" data-action="nav" data-view="community" title="Your trust points">
+    <span class="points-coin"><i data-lucide="star"></i></span>
+    <span class="points-txt"><b id="pts">0</b> pts</span>
+    <span class="points-rank" id="rank-name">Hatchling</span>
+  </button>
+</header>
+
+<main>
+  <!-- ───────────── Explore ───────────── -->
+  <section class="view is-active" id="view-explore">
+    <div class="hello">
+      <div class="hello-txt">
+        <h1 id="hello-title">Hello! Need a loo?</h1>
+        <p id="hello-sub">Ducky is looking around…</p>
+      </div>
+      <div class="hello-stats" id="hello-stats"></div>
+    </div>
+
+    <div class="map-frame">
+      <div class="map-stage" id="map-stage">
+        <div id="map" aria-label="Map of toilets nearby"></div>
+
+        <div class="map-top">
+          <div class="search" id="search">
+            <i data-lucide="search"></i>
+            <input id="q" type="search" autocomplete="off" spellcheck="false"
+                   placeholder="Search a place — or try “free clean toilet nearby”" aria-label="Search places or describe what you need">
+            <button class="iconbtn mic" data-action="voice" data-target="q" title="Voice search" aria-label="Voice search"><i data-lucide="mic"></i></button>
+            <div class="suggest" id="suggest" hidden></div>
+          </div>
+          <button class="chip-home" id="back-home" data-action="back-home" hidden><i data-lucide="locate-fixed"></i>Back to my location</button>
+        </div>
+
+        <div class="map-side">
+          <button class="mapbtn c-blue" data-action="locate" title="Go to my location" aria-label="Go to my location"><i data-lucide="locate-fixed"></i></button>
+          <button class="mapbtn c-pink" data-action="add-toilet" title="Add a toilet" aria-label="Add a toilet"><i data-lucide="map-pin-plus"></i></button>
+        </div>
+
+        <button class="area-pill" id="btn-area" data-action="area" hidden><i data-lucide="search"></i>Search this area</button>
+        <button class="area-pill" id="btn-retry" data-action="retry" hidden><i data-lucide="refresh-cw"></i>Retry live data</button>
+        <div class="loading-pill" id="loading-pill" hidden><span class="spin"></span>Looking for toilets nearby…</div>
+
+        <div class="picker" id="picker" hidden>
+          <div class="crosshair"><div class="pin c-pink"><i data-lucide="plus"></i></div></div>
+          <div class="picker-bar">
+            <span id="picker-text">Move the map to place the pin</span>
+            <button class="btn sm ghost" data-action="pick-cancel">Cancel</button>
+            <button class="btn sm primary" data-action="pick-ok">Use this spot</button>
+          </div>
+        </div>
+
+        <div class="map-bottom">
+          <button class="cta" id="btn-nearest" data-action="nearest">
+            <span class="cta-ic" id="cta-duck"></span>
+            <span class="cta-txt"><b>Find nearest toilet</b><small>One tap — Ducky walks you there</small></span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+          <div class="navbar" id="navbar" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="explore-body">
+      <div class="filterbar" id="filterbar" aria-label="Filters"></div>
+      <div id="smart"></div>
+      <div class="list-head">
+        <div>
+          <h2>Nearby toilets</h2>
+          <p id="list-sub">Finding your location…</p>
+        </div>
+        <label class="sort">
+          <i data-lucide="arrow-up-down"></i>
+          <span>Sort</span>
+          <select id="sort" aria-label="Sort toilets">
+            <option value="nearest">Nearest</option>
+            <option value="rating">Best rated</option>
+            <option value="cheapest">Cheapest</option>
+            <option value="accessible">Most accessible</option>
+          </select>
+        </label>
+      </div>
+      <div class="cards" id="list"></div>
+      <p class="datanote">Locations come from OpenStreetMap. Ratings, reviews, live updates and private hosts are sample data for this demo — your own contributions are saved in this browser.</p>
+    </div>
+  </section>
+
+  <!-- ───────────── Host ───────────── -->
+  <section class="view" id="view-host"></section>
+
+  <!-- ───────────── Community ───────────── -->
+  <section class="view" id="view-community"></section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="Toilet details" hidden></aside>
+
+<!-- Ducky, the helper: tips, live updates and a small menu -->
+<div class="helper" id="helper">
+  <div class="helper-menu" id="helper-menu" hidden></div>
+  <div class="helper-bubble" id="helper-bubble" hidden></div>
+  <button class="helper-duck" id="helper-duck" data-action="helper" aria-label="Ducky, your helper" title="Quack!"></button>
+</div>
+
+<div id="modal-root"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/fun.js"></script>
+<script src="js/explore.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/views.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
